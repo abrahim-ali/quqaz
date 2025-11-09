@@ -59,7 +59,6 @@ ios/*.xcodeproj/project.xcworkspace
 ios/DerivedData/
 
 # Expo EAS
-eas.json
 dist/
 build/
 
