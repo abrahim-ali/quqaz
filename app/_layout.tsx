@@ -6,7 +6,11 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DataProvider } from "@/contexts/DataContext";
-
+import { ErrorBoundary } from 'react-error-boundary';
+import {
+  View,
+  Text,
+} from 'react-native';
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
@@ -42,16 +46,25 @@ function RootLayoutNav() {
   );
 }
 
+const Fallback = ({ error }: { error: Error }) => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+    <Text>عذرًا، حدث خطأ!</Text>
+    <Text>{error.message}</Text>
+  </View>
+);
+
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <AuthProvider>
-          <DataProvider>
-            <RootLayoutNav />
-          </DataProvider>
-        </AuthProvider>
-      </GestureHandlerRootView>
-    </QueryClientProvider>
+    <ErrorBoundary FallbackComponent={Fallback}>
+      <QueryClientProvider client={queryClient}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <AuthProvider>
+            <DataProvider>
+              <RootLayoutNav />
+            </DataProvider>
+          </AuthProvider>
+        </GestureHandlerRootView>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
