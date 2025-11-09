@@ -57,7 +57,7 @@ ios/*.xcworkspace
 ios/*.xcodeproj/xcuserdata
 ios/*.xcodeproj/project.xcworkspace
 ios/DerivedData/
-
+package-lock.json
 # Expo EAS
 dist/
 build/
