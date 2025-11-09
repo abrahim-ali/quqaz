@@ -1,7 +1,7 @@
 // whatsappService.ts
 
 const WA_API_URL = 'https://graph.facebook.com/v24.0/768304483043281/messages';
-const WA_ACCESS_TOKEN = process.env.EXPO_PUBLIC_WA_ACCESS_TOKEN;
+const WA_ACCESS_TOKEN = 'EAAWIx3gi0YIBPZBwBZAIrWmVKGYQ1P99BCEhEtNXPVPyMZAfKTnTIMwrZBUeZBt870VLgCg8p0Oe5kxUUqFx5gw9RZADxettZAWei5dpvqbTEcQbLQZCDnWmAJZCwG1R0LdPZAO7dD0m2GukvzZAjCV6pEDr7ZAiSofSo1LSLHpdSmbfyOQnCzPZC494AVtZCNMwZBp6gDoTQZDZD';
 
 if (!WA_ACCESS_TOKEN) {
   throw new Error(
