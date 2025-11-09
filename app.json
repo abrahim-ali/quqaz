@@ -39,17 +39,7 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
-      "expo-local-authentication",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "minSdkVersion": 21,
-            "targetSdkVersion": 35,
-            "compileSdkVersion": 35
-          }
-        }
-      ]
+      "expo-local-authentication"
     ],
     "experiments": {
       "typedRoutes": true
