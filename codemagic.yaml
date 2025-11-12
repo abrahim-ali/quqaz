@@ -8,10 +8,7 @@ workflows:
     instance_type: linux 
 
     environment:
-      android_signing:
-        - keystore_reference # يجب إعدادها في Codemagic
       groups:
-        - google_play # يجب إعداد المتغير $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
         - env # <-- ⚠️ تم تغيير اسم المجموعة إلى "env"
       # ⚠️ قسم vars يجب أن يحتوي فقط على أسماء المتغيرات، وليس قيمها
       vars:
@@ -133,7 +130,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - info@abudiab.com
+          - abrahim71192@gmail.com
         notify:
           success: true
           failure: false
@@ -141,3 +138,4 @@ workflows:
         auth: integration
         submit_to_testflight: false
         submit_to_app_store: false
+
