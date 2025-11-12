@@ -9,7 +9,7 @@ workflows:
 
     environment:
       groups:
-        - env # <-- ⚠️ تم تغيير اسم المجموعة إلى "env"
+        - .env # <-- ⚠️ تم تغيير اسم المجموعة إلى "env"
       # ⚠️ قسم vars يجب أن يحتوي فقط على أسماء المتغيرات، وليس قيمها
       vars:
         PACKAGE_NAME: "com.quqaz.AffairsEmployees" # هذا مسموح به إذا كنت تريد تعريفه هنا
@@ -71,7 +71,7 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.quqaz.AffairsEmployees
       groups:
-        - env # <-- ⚠️ تم تغيير اسم المجموعة إلى "env"
+        - .env # <-- ⚠️ تم تغيير اسم المجموعة إلى "env"
       vars:
         BUNDLE_ID: "com.quqaz.AffairsEmployees"
         # ⚠️ تأكد من تعديل هذه القيم بناءً على مشروعك الفعلي في مجلد ios/
@@ -138,3 +138,4 @@ workflows:
         auth: integration
         submit_to_testflight: false
         submit_to_app_store: false
+
