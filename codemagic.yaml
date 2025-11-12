@@ -1,0 +1,156 @@
+# codemagic.yaml
+
+workflows:
+  react-native-android:
+    name: React Native Android Build
+    max_build_duration: 120
+    # ⚠️ تم تصحيح instance_type من ubuntu_latest إلى linux
+    instance_type: linux 
+
+    environment:
+      node: 22.20.0
+      android_signing:
+        - keystore_reference
+       
+      groups:
+        - .env # <-- ⚠️ تم تغيير اسم المجموعة إلى "env"
+      # ⚠️ قسم vars يجب أن يحتوي فقط على أسماء المتغيرات، وليس قيمها
+      vars:
+        PACKAGE_NAME: "com.quqaz.AffairsEmployees" # هذا مسموح به إذا كنت تريد تعريفه هنا
+        # ⚠️ لا تضع القيمة هنا، فقط الاسم. القيمة تأتي من المجموعة
+        EXPO_PUBLIC_SUPABASE_URL: $EXPO_PUBLIC_SUPABASE_URL # استدعاء من المجموعة
+        # المتغيرات الأخرى مثل EXPO_PUBLIC_SUPABASE_ANON_KEY و EXPO_PUBLIC_WA_ACCESS_TOKEN
+        # ستكون متاحة تلقائيًا من المجموعة env، لكن لا تضعها في vars
+
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install
+
+      - name: Run Expo Prebuild
+        script: |
+          npx expo prebuild --clean
+
+      # ✅ تم نقل سكربت إعداد Android SDK بعد prebuild
+      - name: Set Android SDK location
+        script: |
+          # التحقق من وجود المجلد android قبل الكتابة
+          if [ ! -d "$CM_BUILD_DIR/android" ]; then
+            echo "Error: android directory not found after expo prebuild. Aborting."
+            exit 1
+          fi
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+
+      # ✅ تثبيت CocoaPods (يُفضل بعد prebuild)
+      - name: Install CocoaPods dependencies (Sometimes needed)
+        script: |
+          cd ios && pod install || echo "Pod install failed, but continuing... (This is okay if not building iOS in this workflow)"
+
+      - name: Build Android APK
+        script: |
+          cd android
+          ./gradlew assembleRelease --no-daemon
+
+    artifacts:
+      - android/app/build/outputs/apk/release/app-release.apk
+
+    publishing:
+      email:
+        recipients:
+          - info@abudiab.com
+        notify:
+          success: true
+          failure: false
+      # google_play:
+      #   credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
+      #   package_name: $PACKAGE_NAME
+      #   track: internal
+      #   submit_as_draft: true
+
+
+  react-native-ios:
+    name: React Native iOS Build
+    max_build_duration: 120
+    instance_type: mac_mini_m2 # مطلوب لبناء iOS
+
+    integrations:
+      app_store_connect: codemagic
+
+    environment:
+      node: 22.20.0
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.quqaz.AffairsEmployees
+      groups:
+        - .env # <-- ⚠️ تم تغيير اسم المجموعة إلى "env"
+      vars:
+        BUNDLE_ID: "com.quqaz.AffairsEmployees"
+        # ⚠️ تأكد من تعديل هذه القيم بناءً على مشروعك الفعلي في مجلد ios/
+        XCODE_WORKSPACE: "Affairs-Employees.xcworkspace" # ⚠️ غيّر إلى الاسم الفعلي
+        XCODE_SCHEME: "Affairs-Employees"              # ⚠️ غيّر إلى الاسم الفعلي
+        APP_STORE_APPLE_ID: 1234567890                # ⚠️ غيّر إلى Apple ID الحقيقي
+        # ⚠️ لا تضع القيمة هنا، فقط الاسم. القيمة تأتي من المجموعة
+        EXPO_PUBLIC_SUPABASE_URL: $EXPO_PUBLIC_SUPABASE_URL # استدعاء من المجموعة
+
+    scripts:
+      - name: تثبيت تبعيات npm
+        script: |
+          # Codemagic تُصدر المتغيرات من المجموعة تلقائيًا
+          npm install
+
+      - name: تشغيل Expo Prebuild
+        script: |
+          npx expo prebuild --clean
+
+      - name: تهيئة قيم Info.plist
+        script: |
+          PLIST="$CM_BUILD_DIR/ios/$XCODE_SCHEME/Info.plist"
+          PLIST_BUDDY=/usr/libexec/PlistBuddy
+          $PLIST_BUDDY -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" 2>/dev/null || true
+
+      - name: تثبيت تبعيات CocoaPods
+        script: |
+          cd ios && pod install
+
+      - name: تهيئة ملفات التوقيع على مشروع Xcode
+        script: xcode-project use-profiles
+
+      - name: زيادة رقم الإصدار (Build Number)
+        script: |
+          cd "$CM_BUILD_DIR/ios"
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")
+          if [ -z "$LATEST_BUILD_NUMBER" ]; then
+            NEW_BUILD_NUMBER=$CM_BUILD_NUMBER
+          else
+            NEW_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          fi
+          agvtool new-version -all "$NEW_BUILD_NUMBER"
+
+      - name: بناء ملف IPA لتوزيعه
+        script: |
+          xcode-project build-ipa \
+            --workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - info@abudiab.com
+        notify:
+          success: true
+          failure: false
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false
+
+
+
+
+
