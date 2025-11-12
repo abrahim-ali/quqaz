@@ -8,6 +8,7 @@ workflows:
     instance_type: linux 
 
     environment:
+      node: 22.20.0
       groups:
         - .env # <-- ⚠️ تم تغيير اسم المجموعة إلى "env"
       # ⚠️ قسم vars يجب أن يحتوي فقط على أسماء المتغيرات، وليس قيمها
@@ -67,6 +68,7 @@ workflows:
       app_store_connect: codemagic
 
     environment:
+      node: 22.20.0
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.quqaz.AffairsEmployees
@@ -138,4 +140,5 @@ workflows:
         auth: integration
         submit_to_testflight: false
         submit_to_app_store: false
+
 
