@@ -17,7 +17,12 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.quqaz.AffairsEmployees",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "يستخدم هذا التطبيق Face ID لتسجيل الدخول الآمن."
+        "NSFaceIDUsageDescription": "يستخدم هذا التطبيق Face ID لتسجيل الدخول الآمن.",
+        "UIWindowBackgroundColor": "#ffffff"
+      },
+      "splash": {
+        "image": "./assets/images/splash-icon.png",
+        "backgroundColor": "#ffffff"
       }
     },
     "android": {
@@ -30,7 +35,12 @@
         "android.permission.INTERNET",
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT"
-      ]
+      ],
+      "statusBar": {
+        "translucent": true,
+        "backgroundColor": "#00000000",
+        "barStyle": "default"
+      }
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -49,15 +59,6 @@
         "projectId": "7e2f191c-769f-4c82-bbb2-1734020720b9"
       }
     },
-    "owner": "abrahimali",
-    "androidStatusBar": {
-      "translucent": true,
-      "backgroundColor": "#00000000"
-    },
-    "androidNavigationBar": {
-      "visible": "sticky-immersive",
-      "backgroundColor": "#00000000"
-    },
-    "backgroundColor": "#00000000"
+    "owner": "abrahimali"
   }
 }
