@@ -1,0 +1,161 @@
+# codemagic.yaml
+
+workflows:
+  react-native-android:
+    name: React Native Android Build
+    max_build_duration: 120
+    instance_type: ubuntu_latest # أرخص وأسرع لـ Android فقط
+
+    environment:
+      android_signing:
+        - keystore_reference # يجب إعدادها في Codemagic
+      groups:
+        - google_play # يجب إعداد المتغير $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
+        .env # <-- أضفت مجموعة المتغيرات البيئية هنا
+      # المتغيرات العامة (التي لا تحتاج إلى حماية)
+      vars:
+        PACKAGE_NAME: "com.quqaz.AffairsEmployees" # وفقًا لـ app.json
+        EXPO_PUBLIC_SUPABASE_URL: $EXPO_PUBLIC_SUPABASE_URL # استدعاء من المجموعة
+
+    scripts:
+      - name: تثبيت تبعيات npm
+        script: |
+          # تصدير المتغيرات البيئية من Codemagic إلى بيئة البناء
+          echo "export EXPO_PUBLIC_SUPABASE_URL=$EXPO_PUBLIC_SUPABASE_URL" >> $CM_ENV
+          echo "export EXPO_PUBLIC_SUPABASE_ANON_KEY=$EXPO_PUBLIC_SUPABASE_ANON_KEY" >> $CM_ENV
+          echo "export EXPO_PUBLIC_WA_ACCESS_TOKEN=$EXPO_PUBLIC_WA_ACCESS_TOKEN" >> $CM_ENV
+          npm install
+
+      - name: إعداد مسار SDK Android
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+
+      - name: تشغيل Expo Prebuild
+        script: |
+          npx expo prebuild --clean # نظف الملفات الأصلية قبل إعادة إنشائها
+
+      - name: تثبيت تبعيات CocoaPods (مهم أحيانًا حتى لـ Android)
+        script: |
+          cd ios && pod install # هذا يضمن توافق المكتبات بين Android وiOS
+
+      - name: بناء إصدار Android (APK)
+        script: |
+          cd android
+          # بناء APK موقّع للإصدار (Release)
+          ./gradlew assembleRelease --no-daemon
+          # ملاحظة: إذا كنت تفضل AAB (لـ Google Play)، استخدم:
+          # ./gradlew bundleRelease --no-daemon
+
+    artifacts:
+      # تحميل ملفات APK و AAB بعد البناء
+      - android/app/build/outputs/apk/release/app-release.apk
+      # - android/app/build/outputs/bundle/release/app.aab # أضف هذا إذا كنت تستخدم bundleRelease
+
+    publishing:
+      email:
+        recipients:
+          - info@abudiab.com # استخدم بريدك
+        notify:
+          success: true
+          failure: false
+      # نشر على Google Play (اختياري - يتطلب إعداد المتغيرات)
+      # google_play:
+      #   credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
+      #   package_name: $PACKAGE_NAME
+      #   track: internal # أو production، beta، إلخ
+      #   submit_as_draft: true # اجعله false إذا كنت ترغب في النشر التلقائي
+
+
+  react-native-ios:
+    name: React Native iOS Build
+    max_build_duration: 120
+    instance_type: mac_mini_m2 # مطلوب لبناء iOS
+
+    integrations:
+      app_store_connect: codemagic # يجب ربطها من إعدادات Codemagic
+
+    environment:
+      ios_signing:
+        distribution_type: app_store # أو development / ad_hoc
+        bundle_identifier: com.quqaz.AffairsEmployees # وفقًا لـ app.json
+      groups:
+        .env # <-- أضفت مجموعة المتغيرات البيئية هنا
+      # المتغيرات العامة (التي لا تحتاج إلى حماية)
+      vars:
+        BUNDLE_ID: "com.quqaz.AffairsEmployees" # وفقًا لـ app.json
+        EXPO_PUBLIC_SUPABASE_URL: $EXPO_PUBLIC_SUPABASE_URL # استدعاء من المجموعة
+        # ⚠️ يجب أن تحدد أسماء workspace و scheme فعليين من مجلد ios/
+        XCODE_WORKSPACE: "Affairs-Employees.xcworkspace" # ⚠️ غيّر "Affairs-Employees.xcworkspace" إلى اسم workspace الصحيح في مجلد ios/
+        XCODE_SCHEME: "Affairs-Employees"              # ⚠️ غيّر "Affairs-Employees" إلى اسم scheme الصحيح في Xcode
+        APP_STORE_APPLE_ID: 1234567890                # ⚠️ غيّر هذا إلى Apple ID تطبيقك في App Store Connect (رقم)
+
+    scripts:
+      - name: تثبيت تبعيات npm
+        script: |
+          # تصدير المتغيرات البيئية من Codemagic إلى بيئة البناء
+          echo "export EXPO_PUBLIC_SUPABASE_URL=$EXPO_PUBLIC_SUPABASE_URL" >> $CM_ENV
+          echo "export EXPO_PUBLIC_SUPABASE_ANON_KEY=$EXPO_PUBLIC_SUPABASE_ANON_KEY" >> $CM_ENV
+          echo "export EXPO_PUBLIC_WA_ACCESS_TOKEN=$EXPO_PUBLIC_WA_ACCESS_TOKEN" >> $CM_ENV
+          npm install
+
+      - name: تشغيل Expo Prebuild
+        script: |
+          npx expo prebuild --clean # نظف الملفات الأصلية قبل إعادة إنشائها
+
+      - name: تهيئة قيم Info.plist
+        script: |
+          PLIST="$CM_BUILD_DIR/ios/$XCODE_SCHEME/Info.plist" # استخدم اسم scheme الصحيح
+          PLIST_BUDDY=/usr/libexec/PlistBuddy
+          # إضافة خاصية ITSAppUsesNonExemptEncryption (مهم لبعض التطبيقات)
+          $PLIST_BUDDY -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" 2>/dev/null || true
+
+      - name: تثبيت تبعيات CocoaPods
+        script: |
+          cd ios && pod install
+
+      - name: تهيئة ملفات التوقيع على مشروع Xcode
+        script: xcode-project use-profiles
+
+      - name: زيادة رقم الإصدار (Build Number)
+        script: |
+          cd "$CM_BUILD_DIR/ios" # استخدم مسار ios
+          # جلب آخر رقم Build من App Store Connect
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")
+          if [ -z "$LATEST_BUILD_NUMBER" ]; then
+            # إذا لم يتم العثور على رقم، استخدم BUILD_NUMBER من Codemagic
+            NEW_BUILD_NUMBER=$CM_BUILD_NUMBER
+          else
+            # زيادة الرقم بواحد
+            NEW_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          fi
+          # تعيين الرقم الجديد
+          agvtool new-version -all "$NEW_BUILD_NUMBER"
+
+      - name: بناء ملف IPA لتوزيعه
+        script: |
+          xcode-project build-ipa \
+            --workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      email:
+        recipients:
+          - info@abudiab.com # استخدم بريدك
+        notify:
+          success: true
+          failure: false
+      app_store_connect:
+        auth: integration # مرتبط بـ app_store_connect في الأعلى
+        # إرسال إلى TestFlight (اختياري)
+        submit_to_testflight: false # غيّر إلى true إذا أردت إرساله للاختبار
+        # beta_groups: # أضف مجموعات المختبرين إذا كان submit_to_testflight: true
+        #   - group name 1
+        #   - group name 2
+        # إرسال إلى App Store (اختياري)
+        submit_to_app_store: false # غيّر إلى true إذا أردت النشر التلقائي
