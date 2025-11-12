@@ -9,8 +9,9 @@ workflows:
 
     environment:
       node: 22.20.0
-       android_signing:
+      android_signing:
         - keystore_reference
+       
       groups:
         - .env # <-- ⚠️ تم تغيير اسم المجموعة إلى "env"
       # ⚠️ قسم vars يجب أن يحتوي فقط على أسماء المتغيرات، وليس قيمها
@@ -148,6 +149,7 @@ workflows:
         auth: integration
         submit_to_testflight: false
         submit_to_app_store: false
+
 
 
 
