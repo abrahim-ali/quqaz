@@ -11,7 +11,7 @@ workflows:
         - keystore_reference # يجب إعدادها في Codemagic
       groups:
         - google_play # يجب إعداد المتغير $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
-        .env # <-- أضفت مجموعة المتغيرات البيئية هنا
+        - expo_env_vars # <-- أضفت مجموعة المتغيرات البيئية هنا
       # المتغيرات العامة (التي لا تحتاج إلى حماية)
       vars:
         PACKAGE_NAME: "com.quqaz.AffairsEmployees" # وفقًا لـ app.json
@@ -79,7 +79,7 @@ workflows:
         distribution_type: app_store # أو development / ad_hoc
         bundle_identifier: com.quqaz.AffairsEmployees # وفقًا لـ app.json
       groups:
-        .env # <-- أضفت مجموعة المتغيرات البيئية هنا
+        - expo_env_vars # <-- أضفت مجموعة المتغيرات البيئية هنا
       # المتغيرات العامة (التي لا تحتاج إلى حماية)
       vars:
         BUNDLE_ID: "com.quqaz.AffairsEmployees" # وفقًا لـ app.json
