@@ -20,24 +20,30 @@ workflows:
         # ستكون متاحة تلقائيًا من المجموعة env، لكن لا تضعها في vars
 
     scripts:
-      - name: تثبيت تبعيات npm
+      - name: Install npm dependencies
         script: |
-          # Codemagic تُصدر المتغيرات من المجموعة تلقائيًا
           npm install
 
-      - name: إعداد مسار SDK Android
-        script: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-
-      - name: تشغيل Expo Prebuild
+      - name: Run Expo Prebuild
         script: |
           npx expo prebuild --clean
 
-      - name: تثبيت تبعيات CocoaPods (مهم أحيانًا حتى لـ Android)
+      # ✅ تم نقل سكربت إعداد Android SDK بعد prebuild
+      - name: Set Android SDK location
         script: |
-          cd ios && pod install
+          # التحقق من وجود المجلد android قبل الكتابة
+          if [ ! -d "$CM_BUILD_DIR/android" ]; then
+            echo "Error: android directory not found after expo prebuild. Aborting."
+            exit 1
+          fi
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
 
-      - name: بناء إصدار Android (APK)
+      # ✅ تثبيت CocoaPods (يُفضل بعد prebuild)
+      - name: Install CocoaPods dependencies (Sometimes needed)
+        script: |
+          cd ios && pod install || echo "Pod install failed, but continuing... (This is okay if not building iOS in this workflow)"
+
+      - name: Build Android APK
         script: |
           cd android
           ./gradlew assembleRelease --no-daemon
@@ -140,5 +146,6 @@ workflows:
         auth: integration
         submit_to_testflight: false
         submit_to_app_store: false
+
 
 
